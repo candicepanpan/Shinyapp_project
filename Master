@@ -1,0 +1,440 @@
+#library
+library(readxl)
+library(ISLR)
+library(ggplot2)
+library(caret)
+library(psych)
+
+
+#load data
+programfile <- as.data.frame(read_xlsx("Data Analytic program.xlsx", sheet=1, col_names=T))
+d <- programfile
+str(d)
+
+###############################################################################
+#EDA
+
+# plot numerical features
+par(mfrow=c(2,3))
+hist(d$StudentAge, main="age", xlab="age", col="gold")
+hist(d$CreditHrs, main="credit hours", xlab="credithours", col="gold")
+hist(d$Pctwomen, main="percentage of women", xlab="Women", col="gold")
+hist(d$PctInternational, main="percentage of International", xlab="Internation student", col="gold")
+hist(d$AvgCost, main="Cost of Tuition", xlab="cost",col="gold")
+hist(d$AvgDuration,main = "Avgerage Duration", xlab="Duration",col="gold")
+hist(d$StudentWorkExpMonths, main = "Student WorkExpMonths", xlab="Work Exp Month",col="gold")
+
+#subset AvgCost and PctWomen
+d2 <- subset(d,select = c(13,16)) # =AvgCost and Pctwomen
+d3 <- na.omit(d2)  #remove missing value
+
+d4 <- subset(d,select= c(9)) #AvgDuration
+d5 <- na.omit(d4) #remove missing value
+
+d6 <- subset(d, select= c(10)) #CreditHrs
+d7 <- na.omit(d6)   #remove missing value
+
+d8 <- subset(d, select= c(17))  #PctInternational
+d9 <- na.omit(d8)  #remove missing value
+
+d10 <- subset(d, select=c(14)) #StudentAge
+d11 <- na.omit(d10)  #remove missing value
+
+d12 <- subset(d, select=c(15))  #StudentWorkExperence
+d13 <- na.omit(d12) #remove missing value
+
+
+d14 <- subset(d, select=c(14,15))
+d15 <- na.omit(d14)
+
+d16 <- subset(d, select=c(9,10,13,14,15,16,17))
+d17 <- na.omit(d16)
+
+d18 <- subset(d, select=c(14,24,27,28,29))
+d19 <- na.omit(d18)
+
+d20 <-subset(d, select=c(16,24,27,28,29))
+d21 <- na.omit(d20)
+
+d22 <-subset(d, select=c(1,2,7,9,10,13,14,15,16,17,27,28,29))
+d23 <- na.omit(d22)
+
+d23$R <- ifelse(d23[ ,11]==1,"Yes","No")
+d23$Python <- ifelse(d23[ ,12]==1,"Yes","No")
+d23$SAS <- ifelse(d23[ ,13]==1,"Yes","No")
+
+#calculate mean, sd for each columns 
+Cost_mean <- mean(d3$AvgCost)
+Pctwomen_mean <- mean(d3$Pctwomen)
+Duration_mean <- mean(d5$AvgDuration)
+Credit_mean <- mean(d7$CreditHrs)
+PctInternational <- mean(d9$PctInternational)
+Age_mean <- mean(d11$StudentAge)
+Studentworkmonth_mean <- mean(d13$StudentWorkExpMonths)
+
+
+#print mean 
+Cost_mean 
+Pctwomen_mean
+Duration_mean
+Credit_mean
+PctInternational
+Age_mean
+Studentworkmonth_mean
+
+
+#get summary of all the mean
+summary(d3$AvgCost)
+summary(d3$Pctwomen)
+summary(d5$AvgDuration)
+summary(d7$CreditHrs)
+summary(d9$PctInternational)
+summary(d11$StudentAge)
+summary(d13$StudentWorkExpMonths)
+
+# lm regession plot to find relationship
+# Duration vs Pctwomen 
+p1 <- ggplot(d, aes(x=d$DurationMonths, y=d$Pctwomen)) + geom_point()
+p1 <- p1 + geom_smooth(method="lm") + labs(x="DurationMonths", y="PctofWomen")+xlim(7,25)
+p1
+
+# Duration vs Pctwomen 
+lmfit <- lm(d$Pctwomen ~ d$DurationMonths, data=d)
+lmfit
+
+summary(lmfit) #R squared 0.005
+
+## Regression diagnostics
+library(faraway)
+# a function to visually check linear regression assumptions
+reviewDiag <- function(lmfit) {
+  # Diagnostic plots
+  par(mfcol=c(2,3), fg="black", bg="white",col.lab="black")
+  # cooks distance - check for influential points
+  cook<-cooks.distance(lmfit) 
+  library(faraway) # library needed for half-normalplot
+  halfnorm(cook,3,ylab="Cooks distance", main="Influences", col="blue") 
+  boxplot(cook, col="blue", ylab="Cooks distance"
+          , main="Boxplot Cooks Distances")
+  # constant variance
+  plot(fitted(lmfit),residuals(lmfit),xlab="Fitted",ylab="Residuals", col="blue"
+       , pch=19, type='p', main="Resid vs. Fitted") 
+  abline(h=0) 
+  plot(fitted(lmfit),abs(residuals(lmfit)),xlab="Fitted",ylab="Abs(Residuals)"
+       , main="Abs(Resid) vs. Fitted", col="blue", pch=19)
+  # normality
+  qqnorm(residuals(lmfit),ylab="Residuals", pch=19, col="blue") 
+  qqline(residuals(lmfit)) 
+  hist(residuals(lmfit), col="blue", main="Historgram of Residuals")
+}
+
+reviewDiag(lmfit)
+
+# CreditHrs VS Pctwomen P2
+p2 <- ggplot(d,aes(x=d$CreditHrs, y=d$Pctwomen)) + geom_point()
+p2 <- p2 + geom_smooth(method="lm") + labs(x="CreditHours", y="PctofWomen") +xlim(25,60)
+p2
+
+
+# CreditHrs VS Pctwomen
+lmfit2 <- lm(d$Pctwomen ~ d$CreditHrs, data=d)
+lmfit2
+
+summary(lmfit2) #R square is toooo small 
+
+# Cost vs Pctwomen P3
+p3 <- ggplot(d,aes(x=d$AvgCost, y=d$Pctwomen)) + geom_point()
+p3 <- p3 + geom_smooth(method="lm") + labs(x="AvgCost", y="PctofWomen")
+p3
+
+# Cost vs Pctwomen
+lmfit3 <- lm(d$Pctwomen ~ d$AvgCost, data=d)
+lmfit3
+
+summary(lmfit3) #R Square is toooo small 
+
+reviewDiag(lmfit3)
+
+#workExpMonths vs PctInternational
+p4 <- ggplot(d,aes(x=d$StudentWorkExpMonths, y=d$PctInternational)) + geom_point()
+p4 <- p4 + geom_smooth(method="lm") + labs(x="Work ExpMonths", y="International") + xlim(0,50)
+p4
+
+lmfit4 <- lm(d$PctInternational ~ d$StudentWorkExpMonths, data=d)
+lmfit4
+
+summary(lmfit4) #R Square 0.002
+
+# Cost vs PctInernational 
+p5 <- ggplot(d,aes(x=d$AvgCost, y=d$PctInternational)) + geom_point()
+p5 <- p5 + geom_smooth(method="lm") + labs(x="Cost", y="International")
+p5
+
+lmfit5 <- lm(d$PctInternational ~ d$AvgCost, data=d)
+lmfit5
+
+summary(lmfit5)#R Square 0.002
+
+# StudentworkMonth vs StudentAge
+p6 <- ggplot(d,aes(x=d$StudentWorkExpMonths, y=d$StudentAge)) + geom_point()
+p6 <- p6 + geom_smooth(method="lm") + labs(x="Work Months", y="Age")+xlim(0,50)
+p6
+
+# StudentworkMonth vs StudentAge
+lmfit6 <- lm(d$StudentAge ~ d$StudentWorkExpMonths)
+summary(lmfit6)   #R Square 0.3215
+
+# Cost vs StudentAge 
+p7 <- ggplot(d,aes(x=d$AvgCost, y=d$StudentAge)) + geom_point()
+p7 <- p7 + geom_smooth(method="lm") + labs(x="Cost", y="Age")
+p7
+
+lmfit7 <- lm(d$StudentAge ~ d$AvgCost)
+summary(lmfit7) #R Square 0.008
+
+#multiplot function
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+###############################################################################
+#
+PctwomenStats <- aggregate(cbind(StudentWorkExpMonths,StudentAge) ~ Pctwomen, data=d, FUN =mean)
+PctwomenStats
+
+## Making Predictions
+
+#DurationMonths vs Pctwomen
+preds <- predict(lmfit, data=d)
+head(preds, n=3)
+# you might want 95% confidence intervals for those predictions
+predCI <- predict(lmfit, data=d, interval="confidence")
+head(predCI, n=3)
+# you might want also want to generate 95% prediction intervals
+predPI <- suppressWarnings(predict(lmfit, data=d,interval="prediction"))
+head(predPI, n=3)
+
+
+# StudentworkMonth vs StudentAge
+preds2 <- predict(lmfit6, data=d)
+head(preds2, n=3)
+# you might want 95% confidence intervals for those predictions
+predCI2 <- predict(lmfit6, data=d, interval="confidence")
+head(predCI2, n=3)
+# you might want also want to generate 95% prediction intervals
+predPI2 <- suppressWarnings(predict(lmfit6, data=d,interval="prediction"))
+head(predPI2, n=3)
+
+
+
+# caret predition 
+descrCor <-  cor(d19[,2:ncol(d19)])                           # correlation matrix
+highCorr <- sum(abs(descrCor[upper.tri(descrCor)]) > .7) # num Xs with cor > t
+summary(descrCor[upper.tri(descrCor)])   
+
+
+highlyCorDescr <- findCorrelation(descrCor, cutoff = 0.7)
+filteredDescr <- d19[,2:ncol(d19)][,-highlyCorDescr] # remove those specific columns
+descrCor2 <- cor(filteredDescr)  
+
+summary(descrCor2[upper.tri(descrCor2)])
+
+d19 <- cbind(d19$StudentAge, filteredDescr)
+
+#rm(filteredDescr, descrCor, descrCor2, highCorr, highlyCorDescr)
+
+
+df <- data.frame(matrix(ncol=13, nrow=0))
+x <- c("University","State","YearBagn","AvgDuration","CreditHrs","AvgCost","StudentAge","StudentWorkMonths","PctWomen","PctInternation"
+       ,"R","Python","SAS")
+colnames(df) <- x
+
+
+library(shiny)
+library(ggplot2)
+library(Cairo)
+library(data.table)
+library(shinythemes)
+
+ui <- tagList(
+  navbarPage(
+    "MS in Analytics/DS programs",theme = shinytheme("cerulean"),
+    tabPanel("General Information",
+             selectInput("University","Choose a school:",
+                         list("Georgia State","University of San Francisco","	
+University of Texas at Austin",	"Washington University in St. Louis",
+                              "Duke University","University of Notre Dame","Arizona State University","	
+University of California Irvine","	
+University of Denver","Syracuse University")),
+             dataTableOutput("tabela")
+    ),
+    tabPanel("Summary of Demographics",
+             mainPanel(
+               
+               h3("Pct women"),
+               verbatimTextOutput("s1"),
+               
+               h3("Pct International"),
+               verbatimTextOutput("s2"),
+               
+               h3("Student Age"),
+               verbatimTextOutput("s3"),
+               
+               h4("Student Work Months"),
+               verbatimTextOutput("s4")
+             )
+    ),
+    tabPanel("Cost Linear Regression",
+             fluidRow(
+               column(width = 6,
+                      plotOutput("plot1", height = 350,
+                                 click = "plot1_click",
+                                 brush = brushOpts(
+                                   id = "plot1_brush"
+                                 )
+                      ),
+                      actionButton("exclude_toggle", "Toggle points"),
+                      actionButton("exclude_reset", "Reset")
+               )
+             )
+    ),
+    tabPanel("Work Months Linear Regression",
+             fluidRow(
+               column(width = 6,
+                      plotOutput("plot2", height = 350,
+                                 click = "plot2_click",
+                                 brush = brushOpts(
+                                   id = "plot2_brush"
+                                 )
+                      ),
+                      actionButton("exclude_toggle2", "Toggle points"),
+                      actionButton("exclude_reset2", "Reset")
+               )
+             )
+    )
+  )
+)
+server <- function(input, output) {
+  # For storing which rows have been excluded
+  vals <- reactiveValues(
+    keeprows = rep(TRUE, nrow(d3))
+  )
+  
+  output$plot1 <- renderPlot({
+    # Plot the kept and excluded points as two separate data sets
+    keep    <- d3[ vals$keeprows, , drop = FALSE]
+    exclude <- d3[!vals$keeprows, , drop = FALSE]
+    
+    ggplot(keep, aes(x= AvgCost, y= Pctwomen)) + geom_point() +
+      geom_smooth(method = lm, fullrange = TRUE, color = "blue") +
+      geom_point(data = exclude, shape = 21, fill = NA, color = "black", alpha = 0.25) +
+      coord_cartesian(xlim = c(10000,100000), ylim = c(0.2,0.9))
+  })
+  
+  # Toggle points that are clicked
+  observeEvent(input$plot1_click, {
+    res <- nearPoints(d3, input$plot1_click, allRows = TRUE)
+    
+    vals$keeprows <- xor(vals$keeprows, res$selected_)
+  })
+  
+  # Toggle points that are brushed, when button is clicked
+  observeEvent(input$exclude_toggle, {
+    res <- brushedPoints(d3, input$plot1_brush, allRows = TRUE)
+    
+    vals$keeprows <- xor(vals$keeprows, res$selected_)
+  })
+  
+  # Reset all points
+  observeEvent(input$exclude_reset, {
+    vals$keeprows <- rep(TRUE, nrow(d3))
+  })
+  
+  ## 2
+  vals2 <- reactiveValues(
+    keeprows = rep(TRUE, nrow(d15))
+  )
+  
+  output$plot2 <- renderPlot({
+    # Plot the kept and excluded points as two separate data sets
+    keep    <- d15[ vals2$keeprows, , drop = FALSE]
+    exclude <- d15[!vals2$keeprows, , drop = FALSE]
+    
+    ggplot(keep, aes(x= StudentWorkExpMonths, y=StudentAge )) + geom_point() +
+      geom_smooth(method = lm, fullrange = TRUE, color = "blue") +
+      geom_point(data = exclude, shape = 21, fill = NA, color = "black", alpha = 0.25) +
+      coord_cartesian(xlim = c(0,50), ylim = c(15,40))
+  })
+  
+  # Toggle points that are clicked
+  observeEvent(input$plot2_click, {
+    res <- nearPoints(d15, input$plot2_click, allRows = TRUE)
+    
+    vals2$keeprows <- xor(vals2$keeprows, res$selected_)
+  })
+  
+  # Toggle points that are brushed, when button is clicked
+  observeEvent(input$exclude_toggle2, {
+    res <- brushedPoints(d15, input$plot2_brush, allRows = TRUE)
+    
+    vals2$keeprows <- xor(vals2$keeprows, res$selected_)
+  })
+  
+  # Reset all points
+  observeEvent(input$exclude_reset2, {
+    vals2$keeprows <- rep(TRUE, nrow(d15))
+  })
+  
+  output$s1 <- renderPrint({
+    summary(d3$Pctwomen)
+  })
+  output$s2 <- renderPrint({
+    summary(d9$PctInternational)
+  })
+  output$s3 <- renderPrint({
+    summary(d11$StudentAge)
+  })
+  output$s4 <- renderPrint({
+    summary(d13$StudentWorkExpMonths)
+  })
+  df_subset <- reactive({
+    df <- subset(d23, University==input$University)
+  })
+  output$tabela<- renderDataTable({df_subset()
+    
+  })
+}
+
+shinyApp(ui, server)
